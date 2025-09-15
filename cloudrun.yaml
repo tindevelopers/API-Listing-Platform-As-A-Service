@@ -1,0 +1,36 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: laas-api
+  namespace: default
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/cpu-throttling: "true"
+        run.googleapis.com/cloudsql-instances: "$(PROJECT_ID):$(REGION):laas-sql"
+        autoscaling.knative.dev/minScale: "0"
+        autoscaling.knative.dev/maxScale: "10"
+    spec:
+      containers:
+        - image: $(REGION)-docker.pkg.dev/$(PROJECT_ID)/laas/laas-api:$(REVISION)
+          ports:
+            - containerPort: 8000
+          env:
+            - name: ENVIRONMENT
+              value: production
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: laas-secrets
+                  key: DATABASE_URL
+            - name: JWT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: laas-secrets
+                  key: JWT_SECRET_KEY
+          resources:
+            limits:
+              cpu: "1"
+              memory: 1Gi
+

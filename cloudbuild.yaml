@@ -1,0 +1,17 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', '$LOCATION-docker.pkg.dev/$PROJECT_ID/laas/laas-api:$COMMIT_SHA', '.']
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '$LOCATION-docker.pkg.dev/$PROJECT_ID/laas/laas-api:$COMMIT_SHA']
+
+images:
+  - '$LOCATION-docker.pkg.dev/$PROJECT_ID/laas/laas-api:$COMMIT_SHA'
+
+substitutions:
+  _SERVICE_NAME: 'laas-api'
+  LOCATION: 'us-central1'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
