@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     environment: str = "development"
 
     # Database
-    database_url: str
+    database_url: str = "sqlite:///./test.db"
     database_pool_size: int = 20
     database_max_overflow: int = 30
 
@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     redis_pool_size: int = 10
 
     # JWT
-    jwt_secret_key: str
+    jwt_secret_key: str = "test-secret-key"
     jwt_algorithm: str = "HS256"
     jwt_access_token_expire_minutes: int = 30
     jwt_refresh_token_expire_days: int = 7
@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     rate_limit_window: int = 60
 
     # Security
-    secret_key: str
+    secret_key: str = "test-secret-key"
     allowed_hosts: List[str] = ["localhost", "127.0.0.1"]
 
     # File Upload
