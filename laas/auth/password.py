@@ -3,6 +3,7 @@ Password management utilities
 """
 
 from passlib.context import CryptContext
+
 from laas.core.config import get_settings
 
 # Password hashing context
@@ -11,53 +12,55 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class PasswordManager:
     """Password management utilities"""
-    
+
     @staticmethod
     def verify_password(plain_password: str, hashed_password: str) -> bool:
         """Verify a password against its hash"""
         return pwd_context.verify(plain_password, hashed_password)
-    
+
     @staticmethod
     def get_password_hash(password: str) -> str:
         """Generate password hash"""
         return pwd_context.hash(password)
-    
+
     @staticmethod
     def validate_password_strength(password: str) -> dict:
         """Validate password strength and return validation result"""
-        result = {
-            "is_valid": True,
-            "errors": [],
-            "score": 0
-        }
-        
+        result = {"is_valid": True, "errors": [], "score": 0}
+
         # Length check
         if len(password) < 8:
             result["errors"].append("Password must be at least 8 characters long")
             result["is_valid"] = False
-        
+
         # Character variety checks
         has_upper = any(c.isupper() for c in password)
         has_lower = any(c.islower() for c in password)
         has_digit = any(c.isdigit() for c in password)
         has_special = any(c in "!@#$%^&*()_+-=[]{}|;:,.<>?" for c in password)
-        
+
         if not has_upper:
-            result["errors"].append("Password must contain at least one uppercase letter")
+            result["errors"].append(
+                "Password must contain at least one uppercase letter"
+            )
             result["is_valid"] = False
-        
+
         if not has_lower:
-            result["errors"].append("Password must contain at least one lowercase letter")
+            result["errors"].append(
+                "Password must contain at least one lowercase letter"
+            )
             result["is_valid"] = False
-        
+
         if not has_digit:
             result["errors"].append("Password must contain at least one digit")
             result["is_valid"] = False
-        
+
         if not has_special:
-            result["errors"].append("Password must contain at least one special character")
+            result["errors"].append(
+                "Password must contain at least one special character"
+            )
             result["is_valid"] = False
-        
+
         # Calculate strength score
         score = 0
         if len(password) >= 8:
@@ -72,7 +75,7 @@ class PasswordManager:
             score += 1
         if has_special:
             score += 1
-        
+
         result["score"] = score
-        
+
         return result

@@ -2,21 +2,21 @@
 Authentication and authorization package for LAAS Platform
 """
 
+from .dependencies import get_current_active_user, get_current_user, require_permission
 from .jwt_handler import AuthManager, create_access_token, verify_token
-from .rbac import Permission, UserRole, has_permission, get_user_permissions
-from .dependencies import get_current_user, get_current_active_user, require_permission
 from .password import PasswordManager
+from .rbac import Permission, UserRole, get_user_permissions, has_permission
 
 __all__ = [
     "AuthManager",
-    "create_access_token", 
+    "create_access_token",
     "verify_token",
     "Permission",
     "UserRole",
     "has_permission",
     "get_user_permissions",
     "get_current_user",
-    "get_current_active_user", 
+    "get_current_active_user",
     "require_permission",
-    "PasswordManager"
+    "PasswordManager",
 ]

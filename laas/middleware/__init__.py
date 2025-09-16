@@ -2,12 +2,8 @@
 Middleware package for LAAS Platform
 """
 
-from .tenant import TenantMiddleware
-from .rate_limit import RateLimitMiddleware
 from .audit import AuditMiddleware
+from .rate_limit import RateLimitMiddleware
+from .tenant import TenantMiddleware
 
-__all__ = [
-    "TenantMiddleware",
-    "RateLimitMiddleware", 
-    "AuditMiddleware"
-]
+__all__ = ["TenantMiddleware", "RateLimitMiddleware", "AuditMiddleware"]

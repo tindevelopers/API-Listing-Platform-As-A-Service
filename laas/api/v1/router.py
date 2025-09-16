@@ -23,7 +23,7 @@ Main API router for v1
 
 from fastapi import APIRouter
 
-from laas.api.v1.endpoints import auth, users, tenants, listings, schemas, search
+from laas.api.v1.endpoints import auth, listings, schemas, search, tenants, users
 
 # Create main API router
 api_router = APIRouter()
