@@ -3,7 +3,7 @@ Role-Based Access Control (RBAC) system
 """
 
 from enum import Enum
-from typing import List, Set, Optional
+from typing import List, Set, Optional, Dict
 from functools import wraps
 
 from fastapi import HTTPException, status, Depends
