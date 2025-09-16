@@ -166,7 +166,7 @@ class User(Base):
 
     # Role and permissions
     role = Column(Enum(UserRole), default=UserRole.USER, nullable=False)
-    permissions = Column(ARRAY(String), default=list)
+    permissions = Column(JSON, default=list)
 
     # Status
     status = Column(String(50), default="active", nullable=False)
@@ -559,7 +559,7 @@ class APIKey(Base):
     )  # First few chars for identification
 
     # Permissions
-    permissions = Column(ARRAY(String), default=list)
+    permissions = Column(JSON, default=list)
     rate_limit = Column(Integer, default=1000, nullable=False)  # Requests per hour
 
     # Status
