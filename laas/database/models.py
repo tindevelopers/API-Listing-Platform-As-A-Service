@@ -218,8 +218,8 @@ class IndustrySchema(Base):
 
     # Schema definition
     fields = Column(JSON, nullable=False)  # List of field definitions
-    searchable_fields = Column(ARRAY(String), default=list)
-    required_fields = Column(ARRAY(String), default=list)
+    searchable_fields = Column(JSON, default=list)
+    required_fields = Column(JSON, default=list)
     business_rules = Column(JSON, default=dict)
 
     # Status
