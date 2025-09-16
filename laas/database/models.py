@@ -285,7 +285,7 @@ class Listing(Base):
     currency = Column(String(3), default="USD", nullable=False)
 
     # Metadata
-    metadata = Column(JSON, default=dict)
+    listing_metadata = Column(JSON, default=dict)
 
     # Search optimization
     search_vector = Column(TSVECTOR, nullable=True)
