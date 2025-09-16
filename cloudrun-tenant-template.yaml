@@ -1,12 +1,11 @@
 apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
-  name: laas-api-core
+  name: laas-api-tenant-$(TENANT_ID)
   namespace: default
   annotations:
     run.googleapis.com/ingress: all
     run.googleapis.com/ingress-status: all
-    run.googleapis.com/ingress: all
 spec:
   template:
     metadata:
@@ -14,18 +13,20 @@ spec:
         run.googleapis.com/cpu-throttling: "false"
         run.googleapis.com/cloudsql-instances: "$(PROJECT_ID):$(REGION):laas-sql"
         autoscaling.knative.dev/minScale: "0"
-        autoscaling.knative.dev/maxScale: "100"
+        autoscaling.knative.dev/maxScale: "20"
         run.googleapis.com/execution-environment: gen2
     spec:
-      containerConcurrency: 1000
+      containerConcurrency: 500
       timeoutSeconds: 300
       containers:
-        - image: $(REGION)-docker.pkg.dev/$(PROJECT_ID)/laas/laas-api-core:$(REVISION)
+        - image: $(REGION)-docker.pkg.dev/$(PROJECT_ID)/laas/laas-api-tenant:$(REVISION)
           ports:
             - containerPort: 8000
           env:
             - name: ENVIRONMENT
               value: production
+            - name: TENANT_ID
+              value: $(TENANT_ID)
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
@@ -51,9 +52,9 @@ spec:
             - name: GOOGLE_CLOUD_REGION
               value: $(REGION)
             - name: CORS_ORIGINS
-              value: "https://$(PROJECT_ID).web.app,https://$(PROJECT_ID).firebaseapp.com"
+              value: "https://$(TENANT_ID).laas-platform.com,https://laas-frontend-$(PROJECT_ID).$(REGION).run.app"
             - name: ALLOWED_HOSTS
-              value: "$(PROJECT_ID).run.app,$(PROJECT_ID).web.app"
+              value: "$(TENANT_ID).laas-platform.com,laas-api-tenant-$(TENANT_ID)-$(PROJECT_ID).$(REGION).run.app"
             - name: LOG_LEVEL
               value: "INFO"
             - name: SENTRY_DSN
@@ -64,11 +65,11 @@ spec:
                   optional: true
           resources:
             limits:
-              cpu: "2"
-              memory: 2Gi
-            requests:
               cpu: "1"
               memory: 1Gi
+            requests:
+              cpu: "0.5"
+              memory: 512Mi
           livenessProbe:
             httpGet:
               path: /health
@@ -85,4 +86,3 @@ spec:
             periodSeconds: 5
             timeoutSeconds: 3
             failureThreshold: 3
-

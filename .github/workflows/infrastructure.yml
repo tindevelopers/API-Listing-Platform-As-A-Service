@@ -1,0 +1,198 @@
+name: Infrastructure Management
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Infrastructure action to perform'
+        required: true
+        default: 'plan'
+        type: choice
+        options:
+        - plan
+        - apply
+        - destroy
+      environment:
+        description: 'Environment to manage'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: us-central1
+
+jobs:
+  infrastructure:
+    name: Manage Infrastructure
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v1
+      with:
+        service_account_key: ${{ secrets.GCP_SA_KEY }}
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+    - name: Enable required APIs
+      run: |
+        gcloud services enable \
+          cloudbuild.googleapis.com \
+          run.googleapis.com \
+          sqladmin.googleapis.com \
+          secretmanager.googleapis.com \
+          redis.googleapis.com \
+          artifactregistry.googleapis.com
+
+    - name: Create Artifact Registry repository
+      if: github.event.inputs.action == 'apply'
+      run: |
+        gcloud artifacts repositories create laas \
+          --repository-format=docker \
+          --location=${{ env.REGION }} \
+          --description="LAAS Platform Docker images" \
+          --quiet || echo "Repository may already exist"
+
+    - name: Create Cloud SQL instance
+      if: github.event.inputs.action == 'apply'
+      run: |
+        gcloud sql instances create laas-sql \
+          --database-version=POSTGRES_15 \
+          --tier=db-f1-micro \
+          --region=${{ env.REGION }} \
+          --storage-type=SSD \
+          --storage-size=10GB \
+          --backup \
+          --enable-ip-alias \
+          --quiet || echo "SQL instance may already exist"
+
+    - name: Create database
+      if: github.event.inputs.action == 'apply'
+      run: |
+        gcloud sql databases create laas_platform \
+          --instance=laas-sql \
+          --quiet || echo "Database may already exist"
+
+    - name: Create database user
+      if: github.event.inputs.action == 'apply'
+      run: |
+        DB_PASSWORD=$(openssl rand -base64 32)
+        echo "DB_PASSWORD=$DB_PASSWORD" >> $GITHUB_ENV
+        gcloud sql users create laas_user \
+          --instance=laas-sql \
+          --password=$DB_PASSWORD \
+          --quiet || echo "Database user may already exist"
+
+    - name: Create Redis instance
+      if: github.event.inputs.action == 'apply'
+      run: |
+        gcloud redis instances create laas-redis \
+          --size=1 \
+          --region=${{ env.REGION }} \
+          --redis-version=redis_7_0 \
+          --tier=basic \
+          --quiet || echo "Redis instance may already exist"
+
+    - name: Create secrets
+      if: github.event.inputs.action == 'apply'
+      run: |
+        # Generate secrets
+        JWT_SECRET=$(openssl rand -base64 32)
+        SECRET_KEY=$(openssl rand -base64 32)
+        
+        # Get database connection details
+        DB_IP=$(gcloud sql instances describe laas-sql --format="value(ipAddresses[0].ipAddress)")
+        DATABASE_URL="postgresql://laas_user:${DB_PASSWORD}@${DB_IP}:5432/laas_platform"
+        
+        # Get Redis connection details
+        REDIS_IP=$(gcloud redis instances describe laas-redis --region=${{ env.REGION }} --format="value(host)")
+        REDIS_URL="redis://${REDIS_IP}:6379/0"
+        
+        # Create or update secrets
+        echo -n "$DATABASE_URL" | gcloud secrets create DATABASE_URL --data-file=- --quiet || \
+          echo -n "$DATABASE_URL" | gcloud secrets versions add DATABASE_URL --data-file=-
+        
+        echo -n "$JWT_SECRET" | gcloud secrets create JWT_SECRET_KEY --data-file=- --quiet || \
+          echo -n "$JWT_SECRET" | gcloud secrets versions add JWT_SECRET_KEY --data-file=-
+        
+        echo -n "$SECRET_KEY" | gcloud secrets create SECRET_KEY --data-file=- --quiet || \
+          echo -n "$SECRET_KEY" | gcloud secrets versions add SECRET_KEY --data-file=-
+        
+        echo -n "$REDIS_URL" | gcloud secrets create REDIS_URL --data-file=- --quiet || \
+          echo -n "$REDIS_URL" | gcloud secrets versions add REDIS_URL --data-file=-
+
+    - name: Grant Cloud Run access to secrets
+      if: github.event.inputs.action == 'apply'
+      run: |
+        gcloud secrets add-iam-policy-binding DATABASE_URL \
+          --member="serviceAccount:${{ env.PROJECT_ID }}-compute@developer.gserviceaccount.com" \
+          --role="roles/secretmanager.secretAccessor"
+        
+        gcloud secrets add-iam-policy-binding JWT_SECRET_KEY \
+          --member="serviceAccount:${{ env.PROJECT_ID }}-compute@developer.gserviceaccount.com" \
+          --role="roles/secretmanager.secretAccessor"
+        
+        gcloud secrets add-iam-policy-binding SECRET_KEY \
+          --member="serviceAccount:${{ env.PROJECT_ID }}-compute@developer.gserviceaccount.com" \
+          --role="roles/secretmanager.secretAccessor"
+        
+        gcloud secrets add-iam-policy-binding REDIS_URL \
+          --member="serviceAccount:${{ env.PROJECT_ID }}-compute@developer.gserviceaccount.com" \
+          --role="roles/secretmanager.secretAccessor"
+
+    - name: List infrastructure resources
+      if: github.event.inputs.action == 'plan'
+      run: |
+        echo "=== Artifact Registry Repositories ==="
+        gcloud artifacts repositories list --location=${{ env.REGION }} || echo "No repositories found"
+        
+        echo "=== Cloud SQL Instances ==="
+        gcloud sql instances list || echo "No SQL instances found"
+        
+        echo "=== Redis Instances ==="
+        gcloud redis instances list --region=${{ env.REGION }} || echo "No Redis instances found"
+        
+        echo "=== Secrets ==="
+        gcloud secrets list || echo "No secrets found"
+        
+        echo "=== Cloud Run Services ==="
+        gcloud run services list --region=${{ env.REGION }} || echo "No Cloud Run services found"
+
+    - name: Destroy infrastructure
+      if: github.event.inputs.action == 'destroy'
+      run: |
+        echo "⚠️  DESTROYING INFRASTRUCTURE FOR ${{ github.event.inputs.environment }}"
+        echo "This will delete all resources. Are you sure?"
+        
+        # Delete Cloud Run services
+        gcloud run services delete laas-api --region=${{ env.REGION }} --quiet || echo "Service not found"
+        gcloud run services delete laas-api-staging --region=${{ env.REGION }} --quiet || echo "Staging service not found"
+        
+        # Delete secrets
+        gcloud secrets delete DATABASE_URL --quiet || echo "Secret not found"
+        gcloud secrets delete JWT_SECRET_KEY --quiet || echo "Secret not found"
+        gcloud secrets delete SECRET_KEY --quiet || echo "Secret not found"
+        gcloud secrets delete REDIS_URL --quiet || echo "Secret not found"
+        
+        # Delete Redis instance
+        gcloud redis instances delete laas-redis --region=${{ env.REGION }} --quiet || echo "Redis instance not found"
+        
+        # Delete Cloud SQL instance
+        gcloud sql instances delete laas-sql --quiet || echo "SQL instance not found"
+        
+        # Delete Artifact Registry repository
+        gcloud artifacts repositories delete laas --location=${{ env.REGION }} --quiet || echo "Repository not found"
+
+    - name: Infrastructure status
+      run: |
+        echo "✅ Infrastructure ${{ github.event.inputs.action }} completed for ${{ github.event.inputs.environment }}"
+        echo "Project ID: ${{ env.PROJECT_ID }}"
+        echo "Region: ${{ env.REGION }}"
+

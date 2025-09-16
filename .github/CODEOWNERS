@@ -1,0 +1,56 @@
+# LAAS Platform Code Owners
+# This file defines who is responsible for different parts of the codebase
+
+# Global code owners - these users will be requested for review on all changes
+* @your-username
+
+# Database and models
+/laas/database/ @your-username
+/laas/database/models.py @your-username
+/database/init.sql @your-username
+
+# API endpoints and routing
+/laas/api/ @your-username
+/laas/api/v1/endpoints/ @your-username
+/laas/api/v1/router.py @your-username
+
+# Authentication and security
+/laas/auth/ @your-username
+/laas/middleware/ @your-username
+
+# Core configuration
+/laas/core/ @your-username
+/laas/schemas/ @your-username
+
+# Search functionality
+/laas/search/ @your-username
+
+# Infrastructure and deployment
+/.github/workflows/ @your-username
+/cloudrun.yaml @your-username
+/cloudbuild.yaml @your-username
+/deploy.sh @your-username
+/Dockerfile @your-username
+/docker-compose.yml @your-username
+
+# Configuration files
+/requirements.txt @your-username
+/pyproject.toml @your-username
+/env.example @your-username
+/env.production @your-username
+
+# Testing
+/tests/ @your-username
+/pytest.ini @your-username
+/run_tests.sh @your-username
+
+# Documentation
+*.md @your-username
+/DEPLOYMENT.md @your-username
+/PROJECT_SUMMARY.md @your-username
+/.github/README.md @your-username
+/.github/BRANCH_PROTECTION.md @your-username
+
+# Main application entry point
+/laas/main.py @your-username
+

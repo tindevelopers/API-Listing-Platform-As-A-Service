@@ -37,4 +37,16 @@ migrations/__pycache__/
 # Docker
 .docker/
 
+# Google Cloud
+service-account-key.json
+*.json
+!.gitignore
+!requirements*.json
+!package*.json
+!tsconfig*.json
+
+# MCP
+memory.jsonl
+.cursor/
+
 

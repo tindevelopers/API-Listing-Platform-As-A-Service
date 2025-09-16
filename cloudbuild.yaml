@@ -1,15 +1,48 @@
 steps:
+  # Build and push core API image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', '$LOCATION-docker.pkg.dev/$PROJECT_ID/laas/laas-api:$COMMIT_SHA', '.']
+    args: ['build', '-t', '$LOCATION-docker.pkg.dev/$PROJECT_ID/laas/laas-api-core:$COMMIT_SHA', '-f', 'Dockerfile', '.']
 
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', '$LOCATION-docker.pkg.dev/$PROJECT_ID/laas/laas-api:$COMMIT_SHA']
+    args: ['push', '$LOCATION-docker.pkg.dev/$PROJECT_ID/laas/laas-api-core:$COMMIT_SHA']
+
+  # Build and push tenant API image (same as core for now, can be customized later)
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', '$LOCATION-docker.pkg.dev/$PROJECT_ID/laas/laas-api-tenant:$COMMIT_SHA', '-f', 'Dockerfile', '.']
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '$LOCATION-docker.pkg.dev/$PROJECT_ID/laas/laas-api-tenant:$COMMIT_SHA']
+
+  # Deploy core API service
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'services'
+      - 'replace'
+      - 'cloudrun.yaml'
+      - '--region=$LOCATION'
+      - '--substitutions=_SERVICE_NAME=laas-api-core,REVISION=$COMMIT_SHA'
+
+  # Deploy frontend service (if frontend directory exists)
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        if [ -d "frontend" ]; then
+          echo "Frontend directory found, deploying frontend service..."
+          gcloud run services replace cloudrun-frontend.yaml --region=$LOCATION --substitutions=REVISION=$COMMIT_SHA
+        else
+          echo "No frontend directory found, skipping frontend deployment"
+        fi
 
 images:
-  - '$LOCATION-docker.pkg.dev/$PROJECT_ID/laas/laas-api:$COMMIT_SHA'
+  - '$LOCATION-docker.pkg.dev/$PROJECT_ID/laas/laas-api-core:$COMMIT_SHA'
+  - '$LOCATION-docker.pkg.dev/$PROJECT_ID/laas/laas-api-tenant:$COMMIT_SHA'
 
 substitutions:
-  _SERVICE_NAME: 'laas-api'
+  _SERVICE_NAME: 'laas-api-core'
   LOCATION: 'us-central1'
 
 options:

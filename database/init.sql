@@ -5,6 +5,8 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";
 CREATE EXTENSION IF NOT EXISTS "btree_gin";
+CREATE EXTENSION IF NOT EXISTS "unaccent";
+CREATE EXTENSION IF NOT EXISTS "postgis";
 
 -- Create schemas for multi-tenant isolation
 CREATE SCHEMA IF NOT EXISTS tenant_management;
@@ -84,6 +86,46 @@ CREATE TEXT SEARCH CONFIGURATION IF NOT EXISTS laas_search (COPY = english);
 
 -- Add custom dictionary for better search results
 -- This can be customized per tenant/industry
+
+-- Create function to update search vector for listings
+CREATE OR REPLACE FUNCTION app.update_listing_search_vector()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.search_vector := to_tsvector('laas_search', 
+        COALESCE(NEW.title, '') || ' ' || 
+        COALESCE(NEW.description, '') || ' ' ||
+        COALESCE(NEW.address, '') || ' ' ||
+        COALESCE(NEW.city, '') || ' ' ||
+        COALESCE(NEW.state, '') || ' ' ||
+        COALESCE(NEW.country, '') || ' ' ||
+        COALESCE(array_to_string(NEW.tags, ' '), '')
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger for search vector updates
+CREATE TRIGGER update_listing_search_vector_trigger
+    BEFORE INSERT OR UPDATE ON listings
+    FOR EACH ROW
+    EXECUTE FUNCTION app.update_listing_search_vector();
+
+-- Create GIN index for full-text search
+CREATE INDEX IF NOT EXISTS idx_listings_search_vector 
+ON listings USING GIN(search_vector);
+
+-- Create function for geospatial distance calculation
+CREATE OR REPLACE FUNCTION app.calculate_distance(
+    lat1 DECIMAL, lon1 DECIMAL, 
+    lat2 DECIMAL, lon2 DECIMAL
+) RETURNS DECIMAL AS $$
+BEGIN
+    RETURN ST_Distance(
+        ST_Point(lon1, lat1)::geography,
+        ST_Point(lon2, lat2)::geography
+    ) / 1609.344; -- Convert meters to miles
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 -- Set up connection pooling and performance settings
 ALTER SYSTEM SET shared_preload_libraries = 'pg_stat_statements';
@@ -192,6 +234,66 @@ INSERT INTO industry_schemas (
     true,
     true
 ) ON CONFLICT (tenant_id, industry, version) DO NOTHING;
+
+-- Create default categories
+INSERT INTO categories (
+    id,
+    tenant_id,
+    name,
+    slug,
+    description,
+    icon,
+    color,
+    level,
+    sort_order,
+    is_active,
+    is_featured
+) VALUES 
+    ('00000000-0000-0000-0000-000000000004'::UUID, '00000000-0000-0000-0000-000000000001'::UUID, 'General', 'general', 'General listings', 'folder', '#3B82F6', 0, 1, true, true),
+    ('00000000-0000-0000-0000-000000000005'::UUID, '00000000-0000-0000-0000-000000000001'::UUID, 'Services', 'services', 'Service listings', 'briefcase', '#10B981', 0, 2, true, true),
+    ('00000000-0000-0000-0000-000000000006'::UUID, '00000000-0000-0000-0000-000000000001'::UUID, 'Products', 'products', 'Product listings', 'shopping-bag', '#F59E0B', 0, 3, true, true),
+    ('00000000-0000-0000-0000-000000000007'::UUID, '00000000-0000-0000-0000-000000000001'::UUID, 'Events', 'events', 'Event listings', 'calendar', '#EF4444', 0, 4, true, true)
+ON CONFLICT (tenant_id, slug) DO NOTHING;
+
+-- Create default tags
+INSERT INTO tags (
+    id,
+    tenant_id,
+    name,
+    slug,
+    description,
+    color,
+    usage_count,
+    is_active
+) VALUES 
+    ('00000000-0000-0000-0000-000000000008'::UUID, '00000000-0000-0000-0000-000000000001'::UUID, 'Featured', 'featured', 'Featured listings', '#F59E0B', 0, true),
+    ('00000000-0000-0000-0000-000000000009'::UUID, '00000000-0000-0000-0000-000000000001'::UUID, 'New', 'new', 'New listings', '#10B981', 0, true),
+    ('00000000-0000-0000-0000-000000000010'::UUID, '00000000-0000-0000-0000-000000000001'::UUID, 'Popular', 'popular', 'Popular listings', '#EF4444', 0, true),
+    ('00000000-0000-0000-0000-000000000011'::UUID, '00000000-0000-0000-0000-000000000001'::UUID, 'Verified', 'verified', 'Verified listings', '#3B82F6', 0, true)
+ON CONFLICT (tenant_id, slug) DO NOTHING;
+
+-- Create default API key for development
+INSERT INTO api_keys (
+    id,
+    tenant_id,
+    user_id,
+    name,
+    key_hash,
+    key_prefix,
+    permissions,
+    rate_limit,
+    is_active
+) VALUES (
+    '00000000-0000-0000-0000-000000000012'::UUID,
+    '00000000-0000-0000-0000-000000000001'::UUID,
+    '00000000-0000-0000-0000-000000000002'::UUID,
+    'Development API Key',
+    '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/8KzKzqK', -- Hash of 'dev-key-123'
+    'dev_',
+    '["read", "write", "admin"]'::TEXT[],
+    10000,
+    true
+) ON CONFLICT DO NOTHING;
 
 -- Grant necessary permissions
 GRANT USAGE ON SCHEMA public TO laas_user;
