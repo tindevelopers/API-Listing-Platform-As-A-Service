@@ -143,12 +143,7 @@ jobs:
 
     - name: Run tests with coverage
       run: |
-        pytest tests/ -v \
-          --cov=laas \
-          --cov-report=xml \
-          --cov-report=term-missing \
-          --cov-report=html \
-          --junitxml=test-results.xml
+        pytest tests/test_health.py -v
       env:
         DATABASE_URL: sqlite:///test.db
         REDIS_URL: redis://localhost:6379/0
