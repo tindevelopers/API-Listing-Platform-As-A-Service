@@ -49,7 +49,7 @@ jobs:
         flake8 laas/ --count --exit-zero --max-complexity=10 --max-line-length=88 --statistics
 
     - name: Run MyPy (type checking)
-      run: mypy laas/ --ignore-missing-imports --no-strict-optional
+      run: mypy laas/ --config-file mypy.ini
 
     - name: Check for TODO/FIXME comments
       run: |
