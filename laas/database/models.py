@@ -22,9 +22,9 @@ from sqlalchemy import (
     Table,
     Text,
     UniqueConstraint,
+    event,
 )
 from sqlalchemy.dialects.postgresql import TSVECTOR, UUID
-from sqlalchemy import event
 from sqlalchemy.orm import DeclarativeBase, relationship
 from sqlalchemy.sql import func
 
