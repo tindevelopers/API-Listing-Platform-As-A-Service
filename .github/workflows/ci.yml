@@ -188,7 +188,8 @@ jobs:
       run: |
         # Test that the image can start
         docker run --rm -d --name laas-test -p 8000:8000 \
-          -e DATABASE_URL="sqlite:///test.db" \
+          -v /tmp:/tmp \
+          -e DATABASE_URL="sqlite:////tmp/test.db" \
           -e JWT_SECRET_KEY="test-key" \
           -e SECRET_KEY="test-secret" \
           -e ENVIRONMENT="testing" \
