@@ -152,7 +152,7 @@ jobs:
           --junitxml=test-results.xml \
           -n auto
       env:
-        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+        DATABASE_URL: sqlite:///test.db
         REDIS_URL: redis://localhost:6379/0
         JWT_SECRET_KEY: test-secret-key
         SECRET_KEY: test-secret-key
