@@ -2,8 +2,7 @@
 Authentication endpoints
 """
 
-from datetime import timedelta
-from typing import Any, Dict
+from typing import Dict
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm

@@ -187,7 +187,7 @@ class TestSearchEngine:
     def test_basic_search(self, search_engine, sample_data):
         """Test basic text search"""
         results = search_engine.search(
-            tenant_id=str(sample_data["tenant"].id),
+            tenant_id=sample_data["tenant"].id,
             query="MacBook"
         )
         
@@ -198,7 +198,7 @@ class TestSearchEngine:
     def test_search_no_results(self, search_engine, sample_data):
         """Test search with no results"""
         results = search_engine.search(
-            tenant_id=str(sample_data["tenant"].id),
+            tenant_id=sample_data["tenant"].id,
             query="nonexistent"
         )
         
@@ -208,7 +208,7 @@ class TestSearchEngine:
     def test_search_all_listings(self, search_engine, sample_data):
         """Test search without query returns all listings"""
         results = search_engine.search(
-            tenant_id=str(sample_data["tenant"].id)
+            tenant_id=sample_data["tenant"].id
         )
         
         assert results["total"] == 3
@@ -217,7 +217,7 @@ class TestSearchEngine:
     def test_category_filter(self, search_engine, sample_data):
         """Test category filtering"""
         results = search_engine.search(
-            tenant_id=str(sample_data["tenant"].id),
+            tenant_id=sample_data["tenant"].id,
             categories=["laptops"]
         )
         
@@ -230,7 +230,7 @@ class TestSearchEngine:
     def test_tag_filter(self, search_engine, sample_data):
         """Test tag filtering"""
         results = search_engine.search(
-            tenant_id=str(sample_data["tenant"].id),
+            tenant_id=sample_data["tenant"].id,
             tags=["featured"]
         )
         
@@ -243,7 +243,7 @@ class TestSearchEngine:
     def test_price_range_filter(self, search_engine, sample_data):
         """Test price range filtering"""
         results = search_engine.search(
-            tenant_id=str(sample_data["tenant"].id),
+            tenant_id=sample_data["tenant"].id,
             price_range={"min": 1000, "max": 2000}
         )
         
@@ -253,7 +253,7 @@ class TestSearchEngine:
     def test_multiple_filters(self, search_engine, sample_data):
         """Test multiple filters combined"""
         results = search_engine.search(
-            tenant_id=str(sample_data["tenant"].id),
+            tenant_id=sample_data["tenant"].id,
             categories=["laptops"],
             tags=["featured"],
             price_range={"min": 2000}
@@ -265,7 +265,7 @@ class TestSearchEngine:
     def test_sort_by_price_asc(self, search_engine, sample_data):
         """Test sorting by price ascending"""
         results = search_engine.search(
-            tenant_id=str(sample_data["tenant"].id),
+            tenant_id=sample_data["tenant"].id,
             sort_by="price",
             sort_order="asc"
         )
@@ -277,7 +277,7 @@ class TestSearchEngine:
     def test_sort_by_price_desc(self, search_engine, sample_data):
         """Test sorting by price descending"""
         results = search_engine.search(
-            tenant_id=str(sample_data["tenant"].id),
+            tenant_id=sample_data["tenant"].id,
             sort_by="price",
             sort_order="desc"
         )
@@ -290,7 +290,7 @@ class TestSearchEngine:
         """Test pagination"""
         # First page
         results1 = search_engine.search(
-            tenant_id=str(sample_data["tenant"].id),
+            tenant_id=sample_data["tenant"].id,
             limit=2,
             offset=0
         )
@@ -301,7 +301,7 @@ class TestSearchEngine:
         
         # Second page
         results2 = search_engine.search(
-            tenant_id=str(sample_data["tenant"].id),
+            tenant_id=sample_data["tenant"].id,
             limit=2,
             offset=2
         )
@@ -313,7 +313,7 @@ class TestSearchEngine:
     def test_get_facets(self, search_engine, sample_data):
         """Test getting search facets"""
         facets = search_engine.get_facets(
-            tenant_id=str(sample_data["tenant"].id)
+            tenant_id=sample_data["tenant"].id
         )
         
         assert "categories" in facets
@@ -336,7 +336,7 @@ class TestSearchEngine:
     def test_get_suggestions(self, search_engine, sample_data):
         """Test getting search suggestions"""
         suggestions = search_engine.get_suggestions(
-            tenant_id=str(sample_data["tenant"].id),
+            tenant_id=sample_data["tenant"].id,
             query="Mac"
         )
         
@@ -345,7 +345,7 @@ class TestSearchEngine:
     def test_search_with_filters(self, search_engine, sample_data):
         """Test search with additional filters"""
         results = search_engine.search(
-            tenant_id=str(sample_data["tenant"].id),
+            tenant_id=sample_data["tenant"].id,
             query="laptop",
             filters={"currency": "USD"}
         )
@@ -357,7 +357,7 @@ class TestSearchEngine:
     def test_search_include_relationships(self, search_engine, sample_data):
         """Test search with relationship loading"""
         results = search_engine.search(
-            tenant_id=str(sample_data["tenant"].id),
+            tenant_id=sample_data["tenant"].id,
             include_media=True,
             include_reviews=True
         )
@@ -381,7 +381,7 @@ class TestSearchEngine:
         db_session.commit()
         
         results = search_engine.search(
-            tenant_id=str(sample_data["tenant"].id)
+            tenant_id=sample_data["tenant"].id
         )
         
         # Should still only return 3 published listings
@@ -405,7 +405,7 @@ class TestSearchEngine:
         db_session.commit()
         
         results = search_engine.search(
-            tenant_id=str(sample_data["tenant"].id)
+            tenant_id=sample_data["tenant"].id
         )
         
         # Should still only return 3 public listings

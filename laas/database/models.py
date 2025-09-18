@@ -5,7 +5,6 @@ Database models for LAAS Platform
 import enum
 import uuid
 from datetime import datetime
-from typing import Any, Dict, List, Optional
 
 from sqlalchemy import (
     DECIMAL,
@@ -25,11 +24,12 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import TSVECTOR, UUID
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import DeclarativeBase, relationship
 from sqlalchemy.sql import func
 
-Base = declarative_base()
+class Base(DeclarativeBase):
+    pass
+
 
 
 # Enums
@@ -182,13 +182,18 @@ class User(Base):
         "Listing", back_populates="owner", cascade="all, delete-orphan"
     )
     reviews = relationship(
-        "Review", back_populates="user", cascade="all, delete-orphan"
+        "Review", back_populates="user", cascade="all, delete-orphan",
+        foreign_keys="Review.user_id"
     )
     favorites = relationship(
         "Listing", secondary=user_favorites, back_populates="favorited_by"
     )
     api_keys = relationship(
         "APIKey", back_populates="user", cascade="all, delete-orphan"
+    )
+    moderated_reviews = relationship(
+        "Review", back_populates="moderator", 
+        foreign_keys="Review.moderated_by"
     )
 
     # Constraints and indexes
@@ -286,8 +291,8 @@ class Listing(Base):
     # Metadata
     listing_metadata = Column(JSON, default=dict)
 
-    # Search optimization
-    search_vector = Column(TSVECTOR, nullable=True)
+    # Search optimization (PostgreSQL TSVECTOR, SQLite TEXT)
+    search_vector = Column(Text, nullable=True)
 
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -528,7 +533,7 @@ class Review(Base):
     # Relationships
     listing = relationship("Listing", back_populates="reviews")
     user = relationship("User", back_populates="reviews", foreign_keys=[user_id])
-    moderator = relationship("User", foreign_keys=[moderated_by])
+    moderator = relationship("User", back_populates="moderated_reviews", foreign_keys=[moderated_by])
 
     # Constraints and indexes
     __table_args__ = (

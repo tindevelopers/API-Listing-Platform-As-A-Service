@@ -5,7 +5,7 @@ Authentication schemas
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr, validator
+from pydantic import BaseModel, EmailStr, field_validator, ConfigDict
 
 from laas.auth.rbac import UserRole
 
@@ -25,8 +25,9 @@ class UserRegister(UserBase):
     tenant_id: str
     role: Optional[UserRole] = UserRole.USER
 
-    @validator("password")
-    def validate_password(cls, v):
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, v: str) -> str:
         if len(v) < 8:
             raise ValueError("Password must be at least 8 characters long")
         return v
@@ -51,8 +52,7 @@ class UserResponse(UserBase):
     updated_at: Optional[datetime] = None
     last_login: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TokenResponse(BaseModel):
@@ -75,8 +75,9 @@ class PasswordResetConfirm(BaseModel):
     token: str
     new_password: str
 
-    @validator("new_password")
-    def validate_password(cls, v):
+    @field_validator("new_password")
+    @classmethod
+    def validate_password(cls, v: str) -> str:
         if len(v) < 8:
             raise ValueError("Password must be at least 8 characters long")
         return v

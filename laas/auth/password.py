@@ -2,9 +2,9 @@
 Password management utilities
 """
 
-from passlib.context import CryptContext
+from typing import Any, Dict, List
 
-from laas.core.config import get_settings
+from passlib.context import CryptContext
 
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -24,13 +24,14 @@ class PasswordManager:
         return pwd_context.hash(password)
 
     @staticmethod
-    def validate_password_strength(password: str) -> dict:
+    def validate_password_strength(password: str) -> Dict[str, Any]:
         """Validate password strength and return validation result"""
-        result = {"is_valid": True, "errors": [], "score": 0}
+        result: Dict[str, Any] = {"is_valid": True, "errors": [], "score": 0}
+        errors: List[str] = []
 
         # Length check
         if len(password) < 8:
-            result["errors"].append("Password must be at least 8 characters long")
+            errors.append("Password must be at least 8 characters long")
             result["is_valid"] = False
 
         # Character variety checks
@@ -40,23 +41,23 @@ class PasswordManager:
         has_special = any(c in "!@#$%^&*()_+-=[]{}|;:,.<>?" for c in password)
 
         if not has_upper:
-            result["errors"].append(
+            errors.append(
                 "Password must contain at least one uppercase letter"
             )
             result["is_valid"] = False
 
         if not has_lower:
-            result["errors"].append(
+            errors.append(
                 "Password must contain at least one lowercase letter"
             )
             result["is_valid"] = False
 
         if not has_digit:
-            result["errors"].append("Password must contain at least one digit")
+            errors.append("Password must contain at least one digit")
             result["is_valid"] = False
 
         if not has_special:
-            result["errors"].append(
+            errors.append(
                 "Password must contain at least one special character"
             )
             result["is_valid"] = False
@@ -77,5 +78,6 @@ class PasswordManager:
             score += 1
 
         result["score"] = score
+        result["errors"] = errors
 
         return result

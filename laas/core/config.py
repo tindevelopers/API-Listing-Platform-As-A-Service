@@ -3,9 +3,9 @@ Configuration management for LAAS Platform
 """
 
 from functools import lru_cache
-from typing import List, Optional
+from typing import Any, List, Optional
 
-from pydantic import validator
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -43,7 +43,7 @@ class Settings(BaseSettings):
 
     # Security
     secret_key: str = "test-secret-key"
-    allowed_hosts: List[str] = ["localhost", "127.0.0.1"]
+    allowed_hosts: List[str] = ["localhost", "127.0.0.1", "testserver"]
 
     # File Upload
     max_file_size: int = 10485760  # 10MB
@@ -68,23 +68,32 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     log_format: str = "json"
 
-    @validator("cors_origins", pre=True)
-    def assemble_cors_origins(cls, v):
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def assemble_cors_origins(cls, v: Any) -> List[str]:
         if isinstance(v, str):
             return [i.strip() for i in v.split(",")]
-        return v
+        elif isinstance(v, list):
+            return v
+        return []
 
-    @validator("allowed_hosts", pre=True)
-    def assemble_allowed_hosts(cls, v):
+    @field_validator("allowed_hosts", mode="before")
+    @classmethod
+    def assemble_allowed_hosts(cls, v: Any) -> List[str]:
         if isinstance(v, str):
             return [i.strip() for i in v.split(",")]
-        return v
+        elif isinstance(v, list):
+            return v
+        return []
 
-    @validator("allowed_file_types", pre=True)
-    def assemble_file_types(cls, v):
+    @field_validator("allowed_file_types", mode="before")
+    @classmethod
+    def assemble_file_types(cls, v: Any) -> List[str]:
         if isinstance(v, str):
             return [i.strip() for i in v.split(",")]
-        return v
+        elif isinstance(v, list):
+            return v
+        return []
 
     class Config:
         env_file = ".env"

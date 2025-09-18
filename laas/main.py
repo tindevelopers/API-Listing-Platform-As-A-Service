@@ -5,9 +5,9 @@ LAAS Platform - Main FastAPI Application
 import time
 import uuid
 from contextlib import asynccontextmanager
-from typing import Any, Dict
+from typing import Dict
 
-from fastapi import FastAPI, HTTPException, Request, Response, status
+from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware

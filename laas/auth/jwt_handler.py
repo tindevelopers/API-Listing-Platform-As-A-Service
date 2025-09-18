@@ -15,7 +15,7 @@ from laas.database.models import User
 class AuthManager:
     """JWT authentication manager"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.settings = get_settings()
         self.secret_key = self.settings.jwt_secret_key
         self.algorithm = self.settings.jwt_algorithm
@@ -87,11 +87,11 @@ class AuthManager:
 
     def create_token_pair(self, user: User) -> Dict[str, str]:
         """Create both access and refresh tokens for a user"""
-        token_data = {
+        token_data: Dict[str, Any] = {
             "sub": str(user.id),
-            "email": user.email,
+            "email": str(user.email),
             "tenant_id": str(user.tenant_id),
-            "role": user.role,
+            "role": user.role.value,
             "permissions": user.permissions or [],
         }
 

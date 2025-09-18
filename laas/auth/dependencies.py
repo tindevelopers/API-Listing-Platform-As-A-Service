@@ -2,7 +2,7 @@
 Authentication dependencies for FastAPI
 """
 
-from typing import Optional
+from typing import Any, Callable, List, Optional
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -27,8 +27,8 @@ async def get_current_user(
     # Verify token
     try:
         payload = verify_token(credentials.credentials)
-        user_id: str = payload.get("sub")
-        tenant_id: str = payload.get("tenant_id")
+        user_id: Optional[str] = payload.get("sub")
+        tenant_id: Optional[str] = payload.get("tenant_id")
 
         if user_id is None or tenant_id is None:
             raise HTTPException(
@@ -39,7 +39,7 @@ async def get_current_user(
 
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
@@ -102,7 +102,7 @@ async def get_optional_current_user(
         return None
 
 
-def require_permission_dependency(permission: Permission):
+def require_permission_dependency(permission: Permission) -> Callable[[], Any]:
     """Create a dependency that requires a specific permission"""
 
     async def permission_checker(
@@ -118,7 +118,9 @@ def require_permission_dependency(permission: Permission):
     return permission_checker
 
 
-def require_any_permission_dependency(permissions: list[Permission]):
+def require_any_permission_dependency(
+    permissions: List[Permission]
+) -> Callable[[], Any]:
     """Create a dependency that requires any of the specified permissions"""
 
     async def permission_checker(
@@ -127,14 +129,19 @@ def require_any_permission_dependency(permissions: list[Permission]):
         if not any(has_permission(current_user, perm) for perm in permissions):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"One of the following permissions required: {[p.value for p in permissions]}",
+                detail=(
+                    "One of the following permissions required: "
+                    f"{[p.value for p in permissions]}"
+                ),
             )
         return current_user
 
     return permission_checker
 
 
-def require_all_permissions_dependency(permissions: list[Permission]):
+def require_all_permissions_dependency(
+    permissions: List[Permission]
+) -> Callable[[], Any]:
     """Create a dependency that requires all of the specified permissions"""
 
     async def permission_checker(
@@ -143,7 +150,10 @@ def require_all_permissions_dependency(permissions: list[Permission]):
         if not all(has_permission(current_user, perm) for perm in permissions):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"All of the following permissions required: {[p.value for p in permissions]}",
+                detail=(
+                    "All of the following permissions required: "
+                    f"{[p.value for p in permissions]}"
+                ),
             )
         return current_user
 

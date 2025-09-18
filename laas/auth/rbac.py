@@ -4,22 +4,11 @@ Role-Based Access Control (RBAC) system
 
 from enum import Enum
 from functools import wraps
-from typing import Dict, List, Optional, Set
+from typing import Any, Callable, Dict, List, Set
 
-from fastapi import Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from fastapi import HTTPException, status
 
-from laas.database.connection import get_db
-from laas.database.models import User
-
-
-class UserRole(str, Enum):
-    """User roles in the system"""
-
-    SUPERADMIN = "superadmin"
-    TENANT_ADMIN = "tenant_admin"
-    USER = "user"
-    GUEST = "guest"
+from laas.database.models import User, UserRole
 
 
 class Permission(str, Enum):
@@ -91,7 +80,7 @@ ROLE_PERMISSIONS: Dict[UserRole, Set[Permission]] = {
         Permission.VIEW_LOGS,
         Permission.MANAGE_INTEGRATIONS,
     },
-    UserRole.TENANT_ADMIN: {
+    UserRole.ADMIN: {
         # Tenant admin has most permissions within their tenant
         Permission.MANAGE_USERS,
         Permission.VIEW_USERS,
@@ -137,8 +126,9 @@ def get_user_permissions(user: User) -> Set[Permission]:
     permissions = set()
 
     # Add role-based permissions
-    if user.role in ROLE_PERMISSIONS:
-        permissions.update(ROLE_PERMISSIONS[user.role])
+    user_role = UserRole(user.role) if isinstance(user.role, str) else user.role
+    if user_role in ROLE_PERMISSIONS:
+        permissions.update(ROLE_PERMISSIONS[user_role])
 
     # Add custom permissions if any
     if user.permissions:
@@ -170,12 +160,12 @@ def has_all_permissions(user: User, permissions: List[Permission]) -> bool:
     return all(perm in user_permissions for perm in permissions)
 
 
-def require_permission(permission: Permission):
+def require_permission(permission: Permission) -> Callable[[Any], Any]:
     """Decorator to require a specific permission"""
 
-    def decorator(func):
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args: Any, **kwargs: Any) -> Any:
             # Extract user from kwargs or dependencies
             user = kwargs.get("current_user")
             if not user:
@@ -197,12 +187,12 @@ def require_permission(permission: Permission):
     return decorator
 
 
-def require_any_permission(permissions: List[Permission]):
+def require_any_permission(permissions: List[Permission]) -> Callable[[Any], Any]:
     """Decorator to require any of the specified permissions"""
 
-    def decorator(func):
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args: Any, **kwargs: Any) -> Any:
             user = kwargs.get("current_user")
             if not user:
                 raise HTTPException(
@@ -213,7 +203,10 @@ def require_any_permission(permissions: List[Permission]):
             if not has_any_permission(user, permissions):
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"One of the following permissions required: {[p.value for p in permissions]}",
+                    detail=(
+                        "One of the following permissions required: "
+                        f"{[p.value for p in permissions]}"
+                    ),
                 )
 
             return await func(*args, **kwargs)
@@ -223,12 +216,12 @@ def require_any_permission(permissions: List[Permission]):
     return decorator
 
 
-def require_all_permissions(permissions: List[Permission]):
+def require_all_permissions(permissions: List[Permission]) -> Callable[[Any], Any]:
     """Decorator to require all of the specified permissions"""
 
-    def decorator(func):
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args: Any, **kwargs: Any) -> Any:
             user = kwargs.get("current_user")
             if not user:
                 raise HTTPException(
@@ -239,7 +232,10 @@ def require_all_permissions(permissions: List[Permission]):
             if not has_all_permissions(user, permissions):
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"All of the following permissions required: {[p.value for p in permissions]}",
+                    detail=(
+                        "All of the following permissions required: "
+                        f"{[p.value for p in permissions]}"
+                    ),
                 )
 
             return await func(*args, **kwargs)
@@ -251,17 +247,17 @@ def require_all_permissions(permissions: List[Permission]):
 
 def is_superadmin(user: User) -> bool:
     """Check if user is a superadmin"""
-    return user.role == UserRole.SUPERADMIN
+    return str(user.role) == UserRole.SUPERADMIN.value
 
 
 def is_tenant_admin(user: User) -> bool:
     """Check if user is a tenant admin"""
-    return user.role == UserRole.TENANT_ADMIN
+    return str(user.role) == UserRole.ADMIN.value
 
 
 def is_admin(user: User) -> bool:
     """Check if user is any type of admin"""
-    return user.role in [UserRole.SUPERADMIN, UserRole.TENANT_ADMIN]
+    return str(user.role) in [UserRole.SUPERADMIN.value, UserRole.ADMIN.value]
 
 
 def can_manage_tenant(user: User, tenant_id: str) -> bool:

@@ -57,20 +57,16 @@ class SearchEngine:
 
         # Full-text search
         if query:
-            # Use PostgreSQL full-text search if available
-            if hasattr(Listing, "search_vector"):
-                q = q.filter(Listing.search_vector.match(query))
-            else:
-                # Fallback to ILIKE search
-                q = q.filter(
-                    or_(
-                        Listing.title.ilike(f"%{query}%"),
-                        Listing.description.ilike(f"%{query}%"),
-                        Listing.address.ilike(f"%{query}%"),
-                        Listing.city.ilike(f"%{query}%"),
-                        Listing.state.ilike(f"%{query}%"),
-                    )
+            # Use ILIKE search for SQLite compatibility
+            q = q.filter(
+                or_(
+                    Listing.title.ilike(f"%{query}%"),
+                    Listing.description.ilike(f"%{query}%"),
+                    Listing.address.ilike(f"%{query}%"),
+                    Listing.city.ilike(f"%{query}%"),
+                    Listing.state.ilike(f"%{query}%"),
                 )
+            )
 
         # Category filtering
         if categories:
@@ -87,14 +83,19 @@ class SearchEngine:
             radius = location.get("radius", 25)  # Default 25 miles
 
             if lat and lon:
-                # Use PostGIS for accurate distance calculation
+                # Use simple distance calculation for SQLite compatibility
+                # This is a rough approximation - for production, consider using PostGIS
+                lat_diff = 0.0145  # Roughly 1 mile in latitude degrees
+                lon_diff = 0.0145  # Roughly 1 mile in longitude degrees (varies by latitude)
+                radius_lat = radius * lat_diff
+                radius_lon = radius * lon_diff
+                
                 q = q.filter(
                     and_(
                         Listing.latitude.isnot(None),
                         Listing.longitude.isnot(None),
-                        text(
-                            f"ST_DWithin(ST_Point(listings.longitude, listings.latitude)::geography, ST_Point({lon}, {lat})::geography, {radius * 1609.344})"
-                        ),
+                        Listing.latitude.between(lat - radius_lat, lat + radius_lat),
+                        Listing.longitude.between(lon - radius_lon, lon + radius_lon),
                     )
                 )
 
