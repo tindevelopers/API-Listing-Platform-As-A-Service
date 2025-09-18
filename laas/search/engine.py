@@ -57,16 +57,33 @@ class SearchEngine:
 
         # Full-text search
         if query:
-            # Use ILIKE search for SQLite compatibility
-            q = q.filter(
-                or_(
-                    Listing.title.ilike(f"%{query}%"),
-                    Listing.description.ilike(f"%{query}%"),
-                    Listing.address.ilike(f"%{query}%"),
-                    Listing.city.ilike(f"%{query}%"),
-                    Listing.state.ilike(f"%{query}%"),
+            # Check if we're using PostgreSQL and can use full-text search
+            if hasattr(self.db.bind.dialect, 'name') and self.db.bind.dialect.name == 'postgresql':
+                try:
+                    # Try PostgreSQL full-text search first
+                    q = q.filter(Listing.search_vector.match(query))
+                except Exception:
+                    # Fallback to ILIKE search
+                    q = q.filter(
+                        or_(
+                            Listing.title.ilike(f"%{query}%"),
+                            Listing.description.ilike(f"%{query}%"),
+                            Listing.address.ilike(f"%{query}%"),
+                            Listing.city.ilike(f"%{query}%"),
+                            Listing.state.ilike(f"%{query}%"),
+                        )
+                    )
+            else:
+                # Use ILIKE search for SQLite and other databases
+                q = q.filter(
+                    or_(
+                        Listing.title.ilike(f"%{query}%"),
+                        Listing.description.ilike(f"%{query}%"),
+                        Listing.address.ilike(f"%{query}%"),
+                        Listing.city.ilike(f"%{query}%"),
+                        Listing.state.ilike(f"%{query}%"),
+                    )
                 )
-            )
 
         # Category filtering
         if categories:
@@ -86,10 +103,12 @@ class SearchEngine:
                 # Use simple distance calculation for SQLite compatibility
                 # This is a rough approximation - for production, consider using PostGIS
                 lat_diff = 0.0145  # Roughly 1 mile in latitude degrees
-                lon_diff = 0.0145  # Roughly 1 mile in longitude degrees (varies by latitude)
+                lon_diff = (
+                    0.0145  # Roughly 1 mile in longitude degrees (varies by latitude)
+                )
                 radius_lat = radius * lat_diff
                 radius_lon = radius * lon_diff
-                
+
                 q = q.filter(
                     and_(
                         Listing.latitude.isnot(None),

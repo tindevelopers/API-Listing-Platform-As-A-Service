@@ -5,7 +5,7 @@ Authentication schemas
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr, field_validator, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 
 from laas.auth.rbac import UserRole
 

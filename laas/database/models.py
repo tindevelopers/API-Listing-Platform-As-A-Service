@@ -24,12 +24,13 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import TSVECTOR, UUID
+from sqlalchemy import event
 from sqlalchemy.orm import DeclarativeBase, relationship
 from sqlalchemy.sql import func
 
+
 class Base(DeclarativeBase):
     pass
-
 
 
 # Enums
@@ -182,8 +183,10 @@ class User(Base):
         "Listing", back_populates="owner", cascade="all, delete-orphan"
     )
     reviews = relationship(
-        "Review", back_populates="user", cascade="all, delete-orphan",
-        foreign_keys="Review.user_id"
+        "Review",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        foreign_keys="Review.user_id",
     )
     favorites = relationship(
         "Listing", secondary=user_favorites, back_populates="favorited_by"
@@ -192,8 +195,7 @@ class User(Base):
         "APIKey", back_populates="user", cascade="all, delete-orphan"
     )
     moderated_reviews = relationship(
-        "Review", back_populates="moderator", 
-        foreign_keys="Review.moderated_by"
+        "Review", back_populates="moderator", foreign_keys="Review.moderated_by"
     )
 
     # Constraints and indexes
@@ -291,7 +293,7 @@ class Listing(Base):
     # Metadata
     listing_metadata = Column(JSON, default=dict)
 
-    # Search optimization (PostgreSQL TSVECTOR, SQLite TEXT)
+    # Search optimization (database-specific)
     search_vector = Column(Text, nullable=True)
 
     # Timestamps
@@ -533,7 +535,9 @@ class Review(Base):
     # Relationships
     listing = relationship("Listing", back_populates="reviews")
     user = relationship("User", back_populates="reviews", foreign_keys=[user_id])
-    moderator = relationship("User", back_populates="moderated_reviews", foreign_keys=[moderated_by])
+    moderator = relationship(
+        "User", back_populates="moderated_reviews", foreign_keys=[moderated_by]
+    )
 
     # Constraints and indexes
     __table_args__ = (

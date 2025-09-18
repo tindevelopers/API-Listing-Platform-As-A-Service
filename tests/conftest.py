@@ -25,8 +25,10 @@ def event_loop():
 @pytest.fixture(scope="function")
 def test_db():
     """Create a test database for each test function."""
-    # Create in-memory SQLite database
-    engine = create_engine("sqlite:///:memory:", echo=False)
+    # Use environment variable for database URL, fallback to SQLite for local testing
+    import os
+    database_url = os.getenv("DATABASE_URL", "sqlite:///:memory:")
+    engine = create_engine(database_url, echo=False)
     Base.metadata.create_all(engine)
     SessionLocal = sessionmaker(bind=engine)
     session = SessionLocal()

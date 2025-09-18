@@ -60,6 +60,7 @@ class DatabaseManager:
         try:
             # Set tenant context for RLS (Row Level Security)
             from sqlalchemy import text
+
             session.execute(text(f"SET app.current_tenant_id = '{tenant_id}'"))
             yield session
         finally:

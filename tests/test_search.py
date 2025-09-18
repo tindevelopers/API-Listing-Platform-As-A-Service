@@ -15,8 +15,10 @@ from laas.search.engine import SearchEngine
 
 @pytest.fixture
 def db_session():
-    """Create an in-memory SQLite database for testing"""
-    engine = create_engine("sqlite:///:memory:", echo=False)
+    """Create a test database for testing"""
+    import os
+    database_url = os.getenv("DATABASE_URL", "sqlite:///:memory:")
+    engine = create_engine(database_url, echo=False)
     Base.metadata.create_all(engine)
     SessionLocal = sessionmaker(bind=engine)
     session = SessionLocal()

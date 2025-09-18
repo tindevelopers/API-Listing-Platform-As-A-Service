@@ -119,7 +119,7 @@ def require_permission_dependency(permission: Permission) -> Callable[[], Any]:
 
 
 def require_any_permission_dependency(
-    permissions: List[Permission]
+    permissions: List[Permission],
 ) -> Callable[[], Any]:
     """Create a dependency that requires any of the specified permissions"""
 
@@ -140,7 +140,7 @@ def require_any_permission_dependency(
 
 
 def require_all_permissions_dependency(
-    permissions: List[Permission]
+    permissions: List[Permission],
 ) -> Callable[[], Any]:
     """Create a dependency that requires all of the specified permissions"""
 

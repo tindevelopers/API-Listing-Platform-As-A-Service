@@ -41,15 +41,11 @@ class PasswordManager:
         has_special = any(c in "!@#$%^&*()_+-=[]{}|;:,.<>?" for c in password)
 
         if not has_upper:
-            errors.append(
-                "Password must contain at least one uppercase letter"
-            )
+            errors.append("Password must contain at least one uppercase letter")
             result["is_valid"] = False
 
         if not has_lower:
-            errors.append(
-                "Password must contain at least one lowercase letter"
-            )
+            errors.append("Password must contain at least one lowercase letter")
             result["is_valid"] = False
 
         if not has_digit:
@@ -57,9 +53,7 @@ class PasswordManager:
             result["is_valid"] = False
 
         if not has_special:
-            errors.append(
-                "Password must contain at least one special character"
-            )
+            errors.append("Password must contain at least one special character")
             result["is_valid"] = False
 
         # Calculate strength score
