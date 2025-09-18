@@ -58,7 +58,10 @@ class SearchEngine:
         # Full-text search
         if query:
             # Check if we're using PostgreSQL and can use full-text search
-            if hasattr(self.db.bind.dialect, 'name') and self.db.bind.dialect.name == 'postgresql':
+            if (
+                hasattr(self.db.bind.dialect, "name")
+                and self.db.bind.dialect.name == "postgresql"
+            ):
                 try:
                     # Try PostgreSQL full-text search first
                     q = q.filter(Listing.search_vector.match(query))
