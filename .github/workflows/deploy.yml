@@ -124,7 +124,7 @@ jobs:
           --max-instances=100 \
           --concurrency=1000 \
           --timeout=300 \
-          --service-account="$PROJECT_ID@appspot.gserviceaccount.com" \
+          --service-account="92132542031-compute@developer.gserviceaccount.com" \
           --set-env-vars="ENVIRONMENT=production,GOOGLE_CLOUD_PROJECT_ID=$PROJECT_ID,GOOGLE_CLOUD_REGION=$REGION" \
           --set-secrets="DATABASE_URL=DATABASE_URL:latest,JWT_SECRET_KEY=JWT_SECRET_KEY:latest,SECRET_KEY=SECRET_KEY:latest,REDIS_URL=REDIS_URL:latest" \
           --add-cloudsql-instances="$PROJECT_ID:$REGION:laas-sql"
