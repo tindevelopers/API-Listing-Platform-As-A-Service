@@ -99,19 +99,10 @@ jobs:
           --member="serviceAccount:$SA_EMAIL" \
           --role="roles/storage.admin" || echo "Storage Admin role may already exist"
       
-    - name: Create GCR repository using gcloud
-      run: |
-        # Try to create the GCR repository using gcloud command
-        gcloud auth configure-docker
-        echo "Attempting to create GCR repository..."
-        # Create a simple test to see if we can push to GCR
-        docker pull hello-world:latest
-        docker tag hello-world:latest gcr.io/$PROJECT_ID/$IMAGE_NAME:test
-        docker push gcr.io/$PROJECT_ID/$IMAGE_NAME:test || echo "GCR push failed, continuing with build..."
-        
     - name: Build and push Docker image
       run: |
-        IMAGE_URI="gcr.io/$PROJECT_ID/$IMAGE_NAME:$GITHUB_SHA"
+        # Try using a generic repository name that might already exist
+        IMAGE_URI="gcr.io/$PROJECT_ID/app:$GITHUB_SHA"
         docker build -t $IMAGE_URI .
         docker push $IMAGE_URI
         echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
