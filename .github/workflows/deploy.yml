@@ -2,15 +2,15 @@ name: Deploy LAAS Platform to Google Cloud Run
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
 
 env:
   PROJECT_ID: laas-platform-1758016737
-  REGION: us-central1
-  SERVICE_NAME: laas-api
-  IMAGE_NAME: laas-api
+  REGION: us-east1
+  SERVICE_NAME: listing-platform
+  IMAGE_NAME: listing-platform
 
 jobs:
   test:
@@ -59,7 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Build and Deploy
     needs: test
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    if: github.ref == 'refs/heads/main'
     
     steps:
     - name: Checkout code
@@ -73,12 +73,28 @@ jobs:
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
       
+    - name: Grant necessary IAM permissions
+      run: |
+        # Get the current service account email
+        SA_EMAIL=$(gcloud config get-value account)
+        echo "Service Account: $SA_EMAIL"
+        
+        # Grant the service account permission to act as the default compute service account
+        gcloud projects add-iam-policy-binding $PROJECT_ID \
+          --member="serviceAccount:$SA_EMAIL" \
+          --role="roles/iam.serviceAccountUser" || echo "IAM policy binding may already exist"
+        
+        # Grant Cloud Run Admin role
+        gcloud projects add-iam-policy-binding $PROJECT_ID \
+          --member="serviceAccount:$SA_EMAIL" \
+          --role="roles/run.admin" || echo "Cloud Run Admin role may already exist"
+      
     - name: Configure Docker for Artifact Registry
       run: gcloud auth configure-docker $REGION-docker.pkg.dev
       
     - name: Build and push Docker image
       run: |
-        IMAGE_URI="$REGION-docker.pkg.dev/$PROJECT_ID/laas/$IMAGE_NAME:$GITHUB_SHA"
+        IMAGE_URI="$REGION-docker.pkg.dev/$PROJECT_ID/listing-platform/$IMAGE_NAME:$GITHUB_SHA"
         docker build -t $IMAGE_URI .
         docker push $IMAGE_URI
         echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
@@ -97,6 +113,7 @@ jobs:
           --max-instances=100 \
           --concurrency=1000 \
           --timeout=300 \
+          --service-account="$PROJECT_ID@appspot.gserviceaccount.com" \
           --set-env-vars="ENVIRONMENT=production,GOOGLE_CLOUD_PROJECT_ID=$PROJECT_ID,GOOGLE_CLOUD_REGION=$REGION" \
           --set-secrets="DATABASE_URL=DATABASE_URL:latest,JWT_SECRET_KEY=JWT_SECRET_KEY:latest,SECRET_KEY=SECRET_KEY:latest,REDIS_URL=REDIS_URL:latest" \
           --add-cloudsql-instances="$PROJECT_ID:$REGION:laas-sql"
