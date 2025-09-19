@@ -99,6 +99,9 @@ jobs:
           --member="serviceAccount:$SA_EMAIL" \
           --role="roles/storage.admin" || echo "Storage Admin role may already exist"
       
+    - name: Configure Docker for GCR
+      run: gcloud auth configure-docker
+      
     - name: Build and push Docker image
       run: |
         # Try using a generic repository name that might already exist
