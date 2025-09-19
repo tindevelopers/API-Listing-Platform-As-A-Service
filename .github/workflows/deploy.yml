@@ -93,6 +93,11 @@ jobs:
         gcloud projects add-iam-policy-binding $PROJECT_ID \
           --member="serviceAccount:$SA_EMAIL" \
           --role="roles/artifactregistry.admin" || echo "Artifact Registry Admin role may already exist"
+        
+        # Grant Storage Admin role for GCR
+        gcloud projects add-iam-policy-binding $PROJECT_ID \
+          --member="serviceAccount:$SA_EMAIL" \
+          --role="roles/storage.admin" || echo "Storage Admin role may already exist"
       
     - name: Configure Docker for Google Container Registry
       run: gcloud auth configure-docker
