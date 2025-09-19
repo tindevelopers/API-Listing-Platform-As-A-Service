@@ -99,13 +99,13 @@ jobs:
           --member="serviceAccount:$SA_EMAIL" \
           --role="roles/storage.admin" || echo "Storage Admin role may already exist"
       
-    - name: Configure Docker for GCR
-      run: gcloud auth configure-docker
+    - name: Configure Docker for Artifact Registry
+      run: gcloud auth configure-docker us-docker.pkg.dev
       
     - name: Build and push Docker image
       run: |
-        # Try using a generic repository name that might already exist
-        IMAGE_URI="gcr.io/$PROJECT_ID/app:$GITHUB_SHA"
+        # Use Artifact Registry instead of GCR
+        IMAGE_URI="us-docker.pkg.dev/$PROJECT_ID/app/listing-platform:$GITHUB_SHA"
         docker build -t $IMAGE_URI .
         docker push $IMAGE_URI
         echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
