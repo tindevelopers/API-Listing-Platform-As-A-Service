@@ -94,20 +94,12 @@ jobs:
           --member="serviceAccount:$SA_EMAIL" \
           --role="roles/artifactregistry.admin" || echo "Artifact Registry Admin role may already exist"
       
-    - name: Create Artifact Registry repository if it doesn't exist
-      run: |
-        # Try to create the repository, ignore if it already exists
-        gcloud artifacts repositories create laas \
-          --repository-format=docker \
-          --location=$REGION \
-          --description="Docker repository for LAAS platform" || echo "Repository may already exist"
-        
     - name: Configure Docker for Artifact Registry
       run: gcloud auth configure-docker $REGION-docker.pkg.dev
       
     - name: Build and push Docker image
       run: |
-        IMAGE_URI="$REGION-docker.pkg.dev/$PROJECT_ID/laas/$IMAGE_NAME:$GITHUB_SHA"
+        IMAGE_URI="$REGION-docker.pkg.dev/$PROJECT_ID/docker/$IMAGE_NAME:$GITHUB_SHA"
         docker build -t $IMAGE_URI .
         docker push $IMAGE_URI
         echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
