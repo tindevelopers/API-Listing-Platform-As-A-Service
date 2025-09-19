@@ -88,6 +88,11 @@ jobs:
         gcloud projects add-iam-policy-binding $PROJECT_ID \
           --member="serviceAccount:$SA_EMAIL" \
           --role="roles/run.admin" || echo "Cloud Run Admin role may already exist"
+        
+        # Grant Artifact Registry Admin role
+        gcloud projects add-iam-policy-binding $PROJECT_ID \
+          --member="serviceAccount:$SA_EMAIL" \
+          --role="roles/artifactregistry.admin" || echo "Artifact Registry Admin role may already exist"
       
     - name: Create Artifact Registry repository if it doesn't exist
       run: |
