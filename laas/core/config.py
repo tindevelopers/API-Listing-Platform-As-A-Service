@@ -43,7 +43,13 @@ class Settings(BaseSettings):
 
     # Security
     secret_key: str = Field(default="test-secret-key", alias="SECRET_KEY")
-    allowed_hosts: List[str] = ["localhost", "127.0.0.1", "testserver", "*.run.app", "*.a.run.app"]
+    allowed_hosts: List[str] = [
+        "localhost",
+        "127.0.0.1",
+        "testserver",
+        "*.run.app",
+        "*.a.run.app",
+    ]
 
     # File Upload
     max_file_size: int = 10485760  # 10MB

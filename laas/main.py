@@ -189,7 +189,7 @@ async def api_status():
     return {
         "status": "healthy",
         "authentication": "iam",
-        "message": "Service is running with IAM-based authentication"
+        "message": "Service is running with IAM-based authentication",
     }
 
 
