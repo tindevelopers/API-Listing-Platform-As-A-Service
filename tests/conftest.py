@@ -2,8 +2,9 @@
 Pytest configuration and shared fixtures for LAAS Platform tests
 """
 
-import pytest
 import asyncio
+
+import pytest
 from fastapi.testclient import TestClient
 
 from laas.main import app
@@ -28,14 +29,10 @@ def client():
 def auth_headers():
     """Create authentication headers for testing."""
     # For IAM-based authentication, we'll use mock headers
-    return {
-        "Authorization": "Bearer mock-iam-token",
-        "X-User-ID": "test-user-123"
-    }
+    return {"Authorization": "Bearer mock-iam-token", "X-User-ID": "test-user-123"}
 
 
 # Test markers
 pytestmark = [
     pytest.mark.asyncio,
 ]
-
