@@ -15,12 +15,8 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from laas.api.v1.router import api_router
 from laas.core.config import get_settings
-from laas.database.connection import db_manager
-from laas.middleware.audit import AuditMiddleware
 from laas.middleware.rate_limit import RateLimitMiddleware
-from laas.middleware.tenant import TenantMiddleware
 
 
 @asynccontextmanager
@@ -29,13 +25,7 @@ async def lifespan(app: FastAPI):
     # Startup
     print("🚀 Starting LAAS Platform...")
 
-    # Initialize database
-    try:
-        db_manager.create_tables()
-        print("✅ Database tables created successfully")
-    except Exception as e:
-        print(f"❌ Database initialization failed: {e}")
-        raise
+    print("✅ LAAS Platform started with IAM-based authentication")
 
     yield
 
@@ -91,9 +81,7 @@ app.add_middleware(
 )
 
 # Custom middleware
-app.add_middleware(TenantMiddleware)
 app.add_middleware(RateLimitMiddleware)
-app.add_middleware(AuditMiddleware)
 
 
 # Global exception handlers
@@ -194,8 +182,15 @@ async def root():
     }
 
 
-# Include API routes
-app.include_router(api_router, prefix="/api/v1")
+# Simple IAM-based endpoint
+@app.get("/api/v1/status")
+async def api_status():
+    """Simple status endpoint for IAM-based access"""
+    return {
+        "status": "healthy",
+        "authentication": "iam",
+        "message": "Service is running with IAM-based authentication"
+    }
 
 
 # Custom OpenAPI schema

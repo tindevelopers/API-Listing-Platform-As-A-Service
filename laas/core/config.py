@@ -5,7 +5,7 @@ Configuration management for LAAS Platform
 from functools import lru_cache
 from typing import Any, List, Optional
 
-from pydantic import field_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -19,16 +19,16 @@ class Settings(BaseSettings):
     environment: str = "development"
 
     # Database
-    database_url: str = "sqlite:///./test.db"
+    database_url: str = Field(default="sqlite:///./test.db", alias="DATABASE_URL")
     database_pool_size: int = 20
     database_max_overflow: int = 30
 
     # Redis
-    redis_url: str = "redis://localhost:6379/0"
+    redis_url: str = Field(default="redis://localhost:6379/0", alias="REDIS_URL")
     redis_pool_size: int = 10
 
     # JWT
-    jwt_secret_key: str = "test-secret-key"
+    jwt_secret_key: str = Field(default="test-secret-key", alias="JWT_SECRET_KEY")
     jwt_algorithm: str = "HS256"
     jwt_access_token_expire_minutes: int = 30
     jwt_refresh_token_expire_days: int = 7
@@ -42,8 +42,8 @@ class Settings(BaseSettings):
     rate_limit_window: int = 60
 
     # Security
-    secret_key: str = "test-secret-key"
-    allowed_hosts: List[str] = ["localhost", "127.0.0.1", "testserver"]
+    secret_key: str = Field(default="test-secret-key", alias="SECRET_KEY")
+    allowed_hosts: List[str] = ["localhost", "127.0.0.1", "testserver", "*.run.app", "*.a.run.app"]
 
     # File Upload
     max_file_size: int = 10485760  # 10MB
@@ -98,6 +98,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = False
+        populate_by_name = True
 
 
 @lru_cache()
