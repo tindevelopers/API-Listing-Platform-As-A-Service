@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
 env:
   PROJECT_ID: laas-platform-1758016737
   REGION: us-east1
@@ -188,3 +193,4 @@ jobs:
       continue-on-error: true
       with:
         sarif_file: 'trivy-results.sarif'
+        category: 'trivy-security-scan'
